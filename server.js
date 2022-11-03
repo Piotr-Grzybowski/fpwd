@@ -1,15 +1,6 @@
-const express = require('express')
-const { urlencoded, json } = require('body-parser')
-const makeRepositories = require('./middleware/repositories')
-const questionRouter = require('./routes/question')
+const app = require('./app')
+const PORT = 3000
 
-const STORAGE_FILE_PATH = 'questions.json'
-
-const app = express()
-
-app.use(urlencoded({ extended: true }))
-app.use(json())
-app.use(makeRepositories(STORAGE_FILE_PATH))
-app.use('/', questionRouter)
-
-module.exports = app
+app.listen(PORT, () => {
+  console.log(`Server is running on port: ${PORT}`)
+})

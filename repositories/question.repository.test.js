@@ -1,8 +1,8 @@
 const { writeFile, rm } = require('fs/promises')
-const { makeQuestionRepository } = require('./question')
+const { makeQuestionRepository } = require('./question.repository')
 const { v4: uuidv4 } = require('uuid')
 
-describe('question repository', () => {
+describe('Testing question repository', () => {
   const TEST_QUESTIONS_FILE_PATH = 'test-questions.json'
   let questionRepo
   const idOfFirstQuestion = uuidv4()
@@ -45,41 +45,26 @@ describe('question repository', () => {
   test('should return a list of 2 questions', async () => {
     await writeFile(TEST_QUESTIONS_FILE_PATH, JSON.stringify(testQuestions))
 
-    expect(await questionRepo.getQuestions()).toHaveLength(2)
+    expect(await questionRepo.getQuestions()).toHaveLength(testQuestions.length)
   })
 
-  it('should return a proper question object for proper ID', async () => {
+  it('should return question object when given valid ID', async () => {
     expect(
       await questionRepo.getQuestionById(idOfSecondQuestion)
     ).toStrictEqual(testQuestions[1])
   })
 
-  it('should return empty array if there is no object with given id', async () => {
+  it('should return empty array when given invalid id', async () => {
     expect(await questionRepo.getQuestionById(invalidId)).toHaveLength(0)
   })
 
-  it('should add new question to the question list', async () => {
+  it('should add new question to the list when given valid question data', async () => {
     const addedQuestion = await questionRepo.addQuestion(extraTestQuestion)
-
-    expect(await questionRepo.getQuestionById(addedQuestion.id)).toHaveProperty(
-      'id',
-      addedQuestion.id
-    )
-    expect(await questionRepo.getQuestionById(addedQuestion.id)).toHaveProperty(
-      'summary',
-      addedQuestion.summary
-    )
-    expect(await questionRepo.getQuestionById(addedQuestion.id)).toHaveProperty(
-      'author',
-      addedQuestion.author
-    )
-    expect(await questionRepo.getQuestionById(addedQuestion.id)).toHaveProperty(
-      'answers',
-      addedQuestion.answers
-    )
+    const questions = await questionRepo.getQuestions()
+    expect(questions[2]).toEqual(expect.objectContaining(extraTestQuestion))
   })
 
-  it('should update question on the question list', async () => {
+  it('should update question when given valid id and valid question data', async () => {
     const updateData = {
       summary: 'What is my name?',
       author: 'Jack Berlin',
@@ -90,36 +75,35 @@ describe('question repository', () => {
       idOfFirstQuestion
     )
 
-    expect(
-      await questionRepo.getQuestionById(updatedQuestion.id)
-    ).toHaveProperty('author', updateData.author)
+    expect(await questionRepo.getQuestionById(idOfFirstQuestion)).toEqual(
+      expect.objectContaining(updateData)
+    )
   })
 
-  it('should delete question with given id', async () => {
+  it('should delete question when given valid id', async () => {
+    const questions = await questionRepo.getQuestions()
     const deletedQuestion = await questionRepo.deleteQuestion(
       idOfSecondQuestion
     )
-    expect(await questionRepo.getQuestions()).toHaveLength(2)
 
-    await questionRepo.deleteQuestion(invalidId)
-    expect(await questionRepo.getQuestions()).toHaveLength(2)
+    expect(await questionRepo.getQuestions()).toHaveLength(questions.length - 1)
   })
 
-  describe('Answers array', () => {
-    const firstAnswer = {
-      author: 'Brian McKenzie',
-      summary: 'The Earth is flat.'
-    }
-    const secondAnswer = {
-      author: 'Dr Strange',
-      summary: 'It is egg-shaped.'
-    }
-
+  describe('Testing answers', () => {
     it('should return empty array of answers', async () => {
       expect(await questionRepo.getAnswers(idOfFirstQuestion)).toHaveLength(0)
     })
 
     it('should return a list of 2 answers', async () => {
+      const firstAnswer = {
+        author: 'Brian McKenzie',
+        summary: 'The Earth is flat.'
+      }
+      const secondAnswer = {
+        author: 'Dr Strange',
+        summary: 'It is egg-shaped.'
+      }
+
       await questionRepo.addAnswer(idOfFirstQuestion, firstAnswer)
       await questionRepo.addAnswer(idOfFirstQuestion, secondAnswer)
 
@@ -129,25 +113,23 @@ describe('question repository', () => {
     it('should return answer object when given a proper id', async () => {
       const answers = await questionRepo.getAnswers(idOfFirstQuestion)
       const idOfFirstAnswer = answers[0].id
+      const firstAnswer = answers[0]
 
       expect(
         await questionRepo.getAnswer(idOfFirstQuestion, idOfFirstAnswer)
-      ).toHaveProperty('author', firstAnswer.author)
-      expect(
-        await questionRepo.getAnswer(idOfFirstQuestion, idOfFirstAnswer)
-      ).toHaveProperty('summary', firstAnswer.summary)
+      ).toStrictEqual(firstAnswer)
     })
 
-    it('should return empty array instead of answer when given valid Id', async () => {
+    it('should return empty array instead of answer when given invalid Id', async () => {
       expect(
         await questionRepo.getAnswer(idOfFirstQuestion, invalidId)
       ).toHaveLength(0)
     })
 
-    it('should update answer with given id', async () => {
+    it('should update answer when given valid id', async () => {
       const answers = await questionRepo.getAnswers(idOfFirstQuestion)
       const idOfFirstAnswer = answers[0].id
-      const answerBody = {
+      const updatedAnswer = {
         author: 'Dylan Bob',
         summary: 'No atmosphere, no sound'
       }
@@ -155,27 +137,23 @@ describe('question repository', () => {
       await questionRepo.updateAnswer(
         idOfFirstQuestion,
         idOfFirstAnswer,
-        answerBody
+        updatedAnswer
       )
 
       expect(
         await questionRepo.getAnswer(idOfFirstQuestion, idOfFirstAnswer)
-      ).toHaveProperty('author', answerBody.author)
-      expect(
-        await questionRepo.getAnswer(idOfFirstQuestion, idOfFirstAnswer)
-      ).toHaveProperty('summary', answerBody.summary)
+      ).toEqual(expect.objectContaining(updatedAnswer))
     })
 
-    it('should delete answer with given id', async () => {
+    it('should delete answer when given valid id', async () => {
       const answers = await questionRepo.getAnswers(idOfFirstQuestion)
       const idOfFirstAnswer = answers[0].id
 
       await questionRepo.deleteAnswer(idOfFirstQuestion, idOfFirstAnswer)
 
-      expect(
-        await questionRepo.getAnswer(idOfFirstQuestion, idOfFirstAnswer)
-      ).toHaveLength(0)
-      expect(await questionRepo.getAnswers(idOfFirstQuestion)).toHaveLength(1)
+      expect(await questionRepo.getAnswers(idOfFirstQuestion)).toHaveLength(
+        answers.length - 1
+      )
     })
   })
 })

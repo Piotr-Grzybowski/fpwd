@@ -1,12 +1,8 @@
 const router = require('express').Router()
-const validator = require('../middleware/validator')
-const schemas = require('../schemas')
+const validator = require('../middleware/validator.middleware')
+const schemas = require('../validatorSchemas/schemas')
 
-router.get('/', (_, res) => {
-  res.json({ message: 'Welcome to responder!' })
-})
-
-router.get('/questions', async (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
     const questions = await req.repositories.questionRepo.getQuestions()
     res.json(questions)
@@ -15,7 +11,7 @@ router.get('/questions', async (req, res, next) => {
   }
 })
 
-router.get('/questions/:questionId', async (req, res, next) => {
+router.get('/:questionId', async (req, res, next) => {
   try {
     const question = await req.repositories.questionRepo.getQuestionById(
       req.params.questionId
@@ -26,21 +22,17 @@ router.get('/questions/:questionId', async (req, res, next) => {
   }
 })
 
-router.post(
-  '/questions',
-  validator(schemas.question),
-  async (req, res, next) => {
-    try {
-      const question = await req.repositories.questionRepo.addQuestion(req.body)
-      res.json(question)
-    } catch (error) {
-      next(error)
-    }
+router.post('/', validator(schemas.question), async (req, res, next) => {
+  try {
+    const question = await req.repositories.questionRepo.addQuestion(req.body)
+    res.json(question)
+  } catch (error) {
+    next(error)
   }
-)
+})
 
 router.put(
-  '/questions/:questionId',
+  '/:questionId',
   validator(schemas.question),
   async (req, res, next) => {
     try {
@@ -55,7 +47,7 @@ router.put(
   }
 )
 
-router.delete('/questions/:questionId', async (req, res, next) => {
+router.delete('/:questionId', async (req, res, next) => {
   try {
     const question = await req.repositories.questionRepo.deleteQuestion(
       req.params.questionId
@@ -66,7 +58,7 @@ router.delete('/questions/:questionId', async (req, res, next) => {
   }
 })
 
-router.get('/questions/:questionId/answers', async (req, res, next) => {
+router.get('/:questionId/answers', async (req, res, next) => {
   try {
     const answers = await req.repositories.questionRepo.getAnswers(
       req.params.questionId
@@ -78,7 +70,7 @@ router.get('/questions/:questionId/answers', async (req, res, next) => {
 })
 
 router.post(
-  '/questions/:questionId/answers',
+  '/:questionId/answers',
   validator(schemas.answer),
   async (req, res, next) => {
     try {
@@ -93,23 +85,20 @@ router.post(
   }
 )
 
-router.get(
-  '/questions/:questionId/answers/:answerId',
-  async (req, res, next) => {
-    try {
-      const answer = await req.repositories.questionRepo.getAnswer(
-        req.params.questionId,
-        req.params.answerId
-      )
-      res.json(answer)
-    } catch (error) {
-      next(error)
-    }
+router.get('/:questionId/answers/:answerId', async (req, res, next) => {
+  try {
+    const answer = await req.repositories.questionRepo.getAnswer(
+      req.params.questionId,
+      req.params.answerId
+    )
+    res.json(answer)
+  } catch (error) {
+    next(error)
   }
-)
+})
 
 router.put(
-  '/questions/:questionId/answers/:answerId',
+  '/:questionId/answers/:answerId',
   validator(schemas.answer),
   async (req, res, next) => {
     try {
@@ -126,27 +115,17 @@ router.put(
   }
 )
 
-router.delete(
-  '/questions/:questionId/answers/:answerId',
-  async (req, res, next) => {
-    try {
-      const answer = await req.repositories.questionRepo.deleteAnswer(
-        req.params.questionId,
-        req.params.answerId
-      )
+router.delete('/:questionId/answers/:answerId', async (req, res, next) => {
+  try {
+    const answer = await req.repositories.questionRepo.deleteAnswer(
+      req.params.questionId,
+      req.params.answerId
+    )
 
-      res.json(answer)
-    } catch (error) {
-      next(error)
-    }
+    res.json(answer)
+  } catch (error) {
+    next(error)
   }
-)
-
-router.use((err, req, res, next) => {
-  return res.status(500).json({
-    error: `Something went wrong!`,
-    message: err.message
-  })
 })
 
 module.exports = router

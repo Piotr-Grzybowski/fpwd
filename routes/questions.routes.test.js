@@ -1,4 +1,4 @@
-const app = require('../server')
+const app = require('../app')
 const { writeFile, rm, rename } = require('fs/promises')
 const supertest = require('supertest')
 const { v4: uuidv4 } = require('uuid')
@@ -21,14 +21,11 @@ describe('Testing Question Routes and validation', () => {
   }
 
   beforeAll(async () => {
-    await rename('./questions.json', './questions_temp.json')
-    await writeFile('./questions.json', JSON.stringify([firstQuestion]))
+    await writeFile('questions-test.json', JSON.stringify([firstQuestion]))
   })
 
   afterAll(async () => {
-    await rename('./questions_error.json', './questions.json')
-    await rm('questions.json')
-    await rename('./questions_temp.json', 'questions.json')
+    await rm('questions-error.json')
   })
 
   describe('Testing validator', () => {
@@ -51,14 +48,14 @@ describe('Testing Question Routes and validation', () => {
       summary: ''
     }
 
-    it('should return error for invalid question data', async () => {
+    it('should return error when invalid question given', async () => {
       const response = await request.post('/questions').send(invalidQuestion)
 
       expect(response.status).toBe(422)
       expect(response.body.error).toBe('"author" is not allowed to be empty')
     })
 
-    it('should return status code 200 for valid question', async () => {
+    it('should return status code 200 when valid question given', async () => {
       const response = await request.post('/questions').send(validQuestion)
 
       expect(response.status).toBe(200)
@@ -71,7 +68,7 @@ describe('Testing Question Routes and validation', () => {
       )
     })
 
-    it('should return error for invalid answer data', async () => {
+    it('should return error when invalid answer data given', async () => {
       const response = await request
         .post(`/questions/${idOfFirstQuestion}/answers`)
         .send(invalidAnswer)
@@ -80,18 +77,14 @@ describe('Testing Question Routes and validation', () => {
       expect(response.body.error).toBe('"summary" is not allowed to be empty')
     })
 
-    it('should return status code 200 for valid answer', async () => {
+    it('should return status code 200 when valid answer data given', async () => {
       const response = await request
         .post(`/questions/${idOfFirstQuestion}/answers`)
         .send(validAnswer)
 
       expect(response.status).toBe(200)
       expect(response.body.answers[1]).toEqual(
-        expect.objectContaining({
-          author: validAnswer.author,
-          summary: validAnswer.summary,
-          id: expect.any(String)
-        })
+        expect.objectContaining(validAnswer)
       )
     })
   })
@@ -188,16 +181,23 @@ describe('Testing Question Routes and validation', () => {
   })
 
   describe('Error handling', () => {
-    // I will rename the db file to simulate an error
-    // Error middleware should catch error and respond with
-    // 500 status code and message in json object
+    //   // I will rename the db file to simulate an error
+    //   // Error middleware should catch error and respond with
+    //   // 500 status code and general error message
 
     it('should catch an error and give proper response', async () => {
-      await rename('./questions.json', './questions_error.json')
+      await rename('./questions-test.json', './questions-error.json')
       const response = await request.get('/questions')
 
       expect(response.status).toBe(500)
-      expect(response.body.error).toBe('Something went wrong!')
+      expect(response.text).toEqual('Something went wrong!')
+    })
+
+    it('should return 404 when no resource found', async () => {
+      const response = await request.get('/notExistingRoute')
+
+      expect(response.status).toBe(404)
+      expect(response.text).toEqual('Resource not found')
     })
   })
 })
